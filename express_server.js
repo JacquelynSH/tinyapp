@@ -1,4 +1,6 @@
 const express = require("express");
+const req = require("express/lib/request");
+const res = require("express/lib/response");
 const app = express();
 const PORT = 8080;
 
@@ -18,4 +20,8 @@ app.listen(PORT, () => {
 
 app.get('/urls.json', (req, res) => {
   res.json(urlDatabase);
+});
+
+app.get('/hello', (req, res) => {
+  res.send('<html><body>Hello <b>World</b></body></html>\n');
 });
