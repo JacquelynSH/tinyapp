@@ -3,6 +3,9 @@ const req = require("express/lib/request");
 const res = require("express/lib/response");
 const app = express();
 const PORT = 8080;
+const bodyParser = require("body-parser");
+
+app.use(bodyParser.urlencoded({extended: true}));
 
 app.set("view engine", "ejs");
 
@@ -33,6 +36,10 @@ app.get('/hello', (req, res) => {
 app.get("/urls", (req, res) => {
   const urlVars = { urls: urlDatabase };
   res.render("urls_index", urlVars);
+});
+
+app.get("/urls/new", (req, res) => {
+  res.render("urls_new");
 });
 
 app.get("/urls/:shortURL", (req, res) => {
