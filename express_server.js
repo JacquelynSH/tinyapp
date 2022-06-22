@@ -4,7 +4,7 @@ const res = require("express/lib/response");
 const app = express();
 const PORT = 8080;
 
-app.set("view egnine", "ejs");
+app.set("view engine", "ejs");
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -31,10 +31,14 @@ app.get('/hello', (req, res) => {
 
 // added route handler to pass the URL data to template
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase };
-  res.render("urls_index", templateVars);
+  const urlVars = { urls: urlDatabase };
+  res.render("urls_index", urlVars);
 });
 
+app.get("/urls/:shortURL", (req, res) => {
+  const longShortURLs = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]};
+  res.render("urls_show", longShortURLs);
+});
 
 
 
