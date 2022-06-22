@@ -42,10 +42,27 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
+//accessing urlDatabase variable
 app.get("/urls/:shortURL", (req, res) => {
   const longShortURLs = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]};
   res.render("urls_show", longShortURLs);
 });
 
+//defines the route that will match the POST request and handle it. logs the request body and gives a dummy response.
+app.post("/urls", (req, res) => {
+  console.log(req.body);  // Log the POST request body to the console
+  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+});
 
+// function to generate 6 random alphanumeric characters
+function generateRandomString(site) {
+  let result = "";
+  const characters = '0123456789abcdefghijklmnopqrstuvwxyz';
+  let newSite = site.length;
+  for (let i = 0; i < 6; i++) {
+    result += characters.charAt(Math.floor(Math.random() * newSite));
+  }
+return result;
+};
 
+console.log(generateRandomString('www.blahblah.com'));
