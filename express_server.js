@@ -9,6 +9,19 @@ app.use(bodyParser.urlencoded({extended: true}));
 
 app.set("view engine", "ejs");
 
+// function to generate 6 random alphanumeric characters
+function generateRandomString(site) {
+  let result = "";
+  const characters = '0123456789abcdefghijklmnopqrstuvwxyz';
+  let newSite = site.length;
+  for (let i = 0; i < 6; i++) {
+    result += characters.charAt(Math.floor(Math.random() * newSite));
+  }
+return result;
+};
+
+
+
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
@@ -50,19 +63,20 @@ app.get("/urls/:shortURL", (req, res) => {
 
 //defines the route that will match the POST request and handle it. logs the request body and gives a dummy response.
 app.post("/urls", (req, res) => {
-  console.log(req.body);  // Log the POST request body to the console
-  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+  // call generateRandomString function and save the value to a variable
+  const shortURLs = generateRandomString(req.body.longURL);
+  const longURL = req.body.longURL;
+  urlDatabase[shortURLs] = longURL;
+  res.redirect(`/urls/${shortURLs}`);
 });
 
-// function to generate 6 random alphanumeric characters
-function generateRandomString(site) {
-  let result = "";
-  const characters = '0123456789abcdefghijklmnopqrstuvwxyz';
-  let newSite = site.length;
-  for (let i = 0; i < 6; i++) {
-    result += characters.charAt(Math.floor(Math.random() * newSite));
-  }
-return result;
-};
-
-console.log(generateRandomString('www.blahblah.com'));
+// Complete the code so that requests to the endpoint "/u/:shortURL" will redirect to its longURL
+app.get("/u/:shortURL", (req, res) => {
+  // const longURL = req.body.longURL
+  const shortURL = req.body.longURL;
+  const longURL = urlDatabase[shortURL];
+    if (!longURL) {
+      res.status(404).send("Page not Found");
+    }
+  res.redirect(`/urls/${longURL}`);
+});
