@@ -73,15 +73,29 @@ app.post("/urls", (req, res) => {
 // Complete the code so that requests to the endpoint "/u/:shortURL" will redirect to its longURL
 app.get("/u/:shortURL", (req, res) => {
   // const longURL = req.body.longURL
-  const shortURL = req.body.longURL;
+  const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL];
     if (!longURL) {
       res.status(404).send("Page not Found");
     }
-  res.redirect(`/urls/${longURL}`);
+  res.redirect(longURL);
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
 delete urlDatabase[req.params.shortURL];
 res.redirect("/urls");
 });
+
+app.post("/urls/:shortURL", (req, res) => {
+  const shortURL = req.params.shortURL;
+  const longURL = req.body.longURL;
+  urlDatabase[shortURL] = longURL;
+res.redirect("/urls");
+  });
+
+  // const user = {
+  //   name: "ian"
+  // }
+
+  // const field = "name"
+  // user[field] = "john"
