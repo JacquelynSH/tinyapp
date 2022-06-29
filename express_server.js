@@ -4,9 +4,10 @@ const res = require("express/lib/response");
 const app = express();
 const PORT = 8080;
 const bodyParser = require("body-parser");
+const cookieParser = require('cookie-parser')
 
 app.use(bodyParser.urlencoded({extended: true}));
-
+app.use(cookieParser());
 app.set("view engine", "ejs");
 
 // function to generate 6 random alphanumeric characters
@@ -47,17 +48,25 @@ app.get('/hello', (req, res) => {
 
 // added route handler to pass the URL data to template
 app.get("/urls", (req, res) => {
-  const urlVars = { urls: urlDatabase };
+  const urlVars =
+  { urls: urlDatabase,
+    username: req.cookies['username']
+  };
   res.render("urls_index", urlVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const urlVars =
+  { urls: urlDatabase,
+    username: req.cookies['username']
+  };
+  res.render("urls_new", urlVars);
 });
 
 //accessing urlDatabase variable
 app.get("/urls/:shortURL", (req, res) => {
-  const longShortURLs = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]};
+
+  const longShortURLs = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], username: req.cookies['username']};
   res.render("urls_show", longShortURLs);
 });
 
@@ -92,6 +101,22 @@ app.post("/urls/:shortURL", (req, res) => {
   urlDatabase[shortURL] = longURL;
 res.redirect("/urls");
   });
+
+app.post("/login", (req, res) => {
+res.cookie('username', req.body.username);
+res.redirect("/urls");
+});
+
+app.post("/logout", (req, res) => {
+  res.clearCookie('username');
+  res.redirect("urls");
+})
+
+
+
+
+
+
 
   // const user = {
   //   name: "ian"
