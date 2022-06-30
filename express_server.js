@@ -4,7 +4,8 @@ const res = require("express/lib/response");
 const app = express();
 const PORT = 8080;
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser')
+const cookieParser = require('cookie-parser');
+const { Template } = require("ejs");
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
@@ -50,7 +51,8 @@ app.get('/hello', (req, res) => {
 app.get("/urls", (req, res) => {
   const urlVars =
   { urls: urlDatabase,
-    username: req.cookies['username']
+    username: req.cookies['username'],
+    // password: req.cookies['password']
   };
   res.render("urls_index", urlVars);
 });
@@ -58,7 +60,8 @@ app.get("/urls", (req, res) => {
 app.get("/urls/new", (req, res) => {
   const urlVars =
   { urls: urlDatabase,
-    username: req.cookies['username']
+    username: req.cookies['username'],
+    // password: req.cookies['password']
   };
   res.render("urls_new", urlVars);
 });
@@ -109,7 +112,18 @@ res.redirect("/urls");
 
 app.post("/logout", (req, res) => {
   res.clearCookie('username');
-  res.redirect("urls");
+  res.redirect("/urls");
+});
+
+// in express_server.js, create a GET /register endpoint which returns the template you just created
+
+app.get("/register", (req, res) => {
+  const urlVars =
+  {
+    username: req.cookies['username']
+    // password: req.cookies['password']
+  };
+res.render("urls_register", urlVars);
 })
 
 
