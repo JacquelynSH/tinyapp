@@ -19,10 +19,23 @@ function generateRandomString(site) {
   for (let i = 0; i < 6; i++) {
     result += characters.charAt(Math.floor(Math.random() * newSite));
   }
-return result;
+  return result;
+}
+
+// variable assigned to an empty object to store user info
+const users = {
 };
 
-
+// helper function for looping through users
+const searchUsers = function(emailofuser) {
+  for (let user in users) {
+    let email = users[user].email;
+    if (emailofuser === email) {
+      return true;
+    }
+  }
+  return false;
+};
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -51,7 +64,7 @@ app.get('/hello', (req, res) => {
 app.get("/urls", (req, res) => {
   const urlVars =
   { urls: urlDatabase,
-    username: req.cookies['username'],
+    email: req.cookies['email'],
     // password: req.cookies['password']
   };
   res.render("urls_index", urlVars);
@@ -60,7 +73,7 @@ app.get("/urls", (req, res) => {
 app.get("/urls/new", (req, res) => {
   const urlVars =
   { urls: urlDatabase,
-    username: req.cookies['username'],
+    email: req.cookies['email'],
     // password: req.cookies['password']
   };
   res.render("urls_new", urlVars);
@@ -69,7 +82,7 @@ app.get("/urls/new", (req, res) => {
 //accessing urlDatabase variable
 app.get("/urls/:shortURL", (req, res) => {
 
-  const longShortURLs = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], username: req.cookies['username']};
+  const longShortURLs = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], email: req.cookies['email']};
   res.render("urls_show", longShortURLs);
 });
 
@@ -87,54 +100,62 @@ app.get("/u/:shortURL", (req, res) => {
   // const longURL = req.body.longURL
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL];
-    if (!longURL) {
-      res.status(404).send("Page not Found");
-    }
+  if (!longURL) {
+    res.status(404).send("Page not Found");
+  }
   res.redirect(longURL);
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-delete urlDatabase[req.params.shortURL];
-res.redirect("/urls");
+  delete urlDatabase[req.params.shortURL];
+  res.redirect("/urls");
 });
 
 app.post("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = req.body.longURL;
   urlDatabase[shortURL] = longURL;
-res.redirect("/urls");
-  });
-
-app.post("/login", (req, res) => {
-res.cookie('username', req.body.username);
-res.redirect("/urls");
-});
-
-app.post("/logout", (req, res) => {
-  res.clearCookie('username');
   res.redirect("/urls");
 });
 
-// in express_server.js, create a GET /register endpoint which returns the template you just created
+app.post("/login", (req, res) => {
+  res.cookie('email', req.body.email);
+  res.redirect("/urls");
+});
+
+app.post("/logout", (req, res) => {
+  res.clearCookie('email');
+  res.redirect("/urls");
+});
 
 app.get("/register", (req, res) => {
-  const urlVars =
-  {
-    username: req.cookies['username']
-    // password: req.cookies['password']
+  const urlVars = {
+    email: req.cookies['email']
   };
-res.render("urls_register", urlVars);
-})
+  res.render("urls_register", urlVars);
+});
+
+app.post("/register", (req, res) => {
+
+  let userID = generateRandomString(req.body.email);
+  let userEmail = req.body.email;
+  let userPassword = req.body.password;
+  // add new user to user object
+
+  if (searchUsers(userEmail)) {
+    return res.status(400).send("email already in use");
+  } else if (!userEmail || !userPassword) {
+    return res.status(400).send("Enter email and password");
+  }
+  users[userID] = {id: userID, email: userEmail, password: userPassword};
+  //set cookie
+  res.cookie("userID", userID);
+  res.cookie("password", userPassword);
+  res.redirect("/urls");
+  console.log(users);
+});
 
 
 
 
 
-
-
-  // const user = {
-  //   name: "ian"
-  // }
-
-  // const field = "name"
-  // user[field] = "john"
