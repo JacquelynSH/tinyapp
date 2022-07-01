@@ -38,6 +38,16 @@ const searchUsers = function(emailofuser) {
   return false;
 };
 
+const getUserByID = function(id) {
+for (let user in users) {
+  let userId = users[user].id;
+  if (userId === id ) {
+   return users[user];
+  }
+}
+return false;
+}
+
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
@@ -63,10 +73,10 @@ app.get('/hello', (req, res) => {
 
 // added route handler to pass the URL data to template
 app.get("/urls", (req, res) => {
+  const getUser = getUserByID(req.cookies.userID);
   const urlVars =
   { urls: urlDatabase,
-    email: req.cookies['email'],
-    // password: req.cookies['password']
+    email: getUser.email
   };
   res.render("urls_index", urlVars);
 });
