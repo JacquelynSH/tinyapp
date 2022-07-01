@@ -39,14 +39,14 @@ const searchUsers = function(emailofuser) {
 };
 
 const getUserByID = function(id) {
-for (let user in users) {
-  let userId = users[user].id;
-  if (userId === id ) {
-   return users[user];
+  for (let user in users) {
+    let userId = users[user].id;
+    if (userId === id) {
+      return users[user];
+    }
   }
-}
-return false;
-}
+  return false;
+};
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -84,15 +84,13 @@ app.get("/urls", (req, res) => {
 app.get("/urls/new", (req, res) => {
   const urlVars =
   { urls: urlDatabase,
-    email: req.cookies['email'],
-    // password: req.cookies['password']
+    email: req.cookies['email']
   };
   res.render("urls_new", urlVars);
 });
 
 //accessing urlDatabase variable
 app.get("/urls/:shortURL", (req, res) => {
-
   const longShortURLs = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], email: req.cookies['email']};
   res.render("urls_show", longShortURLs);
 });
@@ -108,7 +106,6 @@ app.post("/urls", (req, res) => {
 
 // Complete the code so that requests to the endpoint "/u/:shortURL" will redirect to its longURL
 app.get("/u/:shortURL", (req, res) => {
-  // const longURL = req.body.longURL
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL];
   if (!longURL) {
@@ -129,34 +126,26 @@ app.post("/urls/:shortURL", (req, res) => {
   res.redirect("/urls");
 });
 
-// const users = {
-//   g6gga4: {
-//     id: 'g6gga4',
-//     email: 'giddyup@email.com',
-//     password: 'password' }
-// }
+
 app.post("/login", (req, res) => {
-// update to lookup the email addresses submitted via login form in the user object
-let userEmail = req.body.email;
-let userPassword = req.body.password;
-let userID;
-const checkEmail = searchUsers(userEmail)
-if (!checkEmail) {
+  let userEmail = req.body.email;
+  let userPassword = req.body.password;
+  // let userID;
+  const checkEmail = searchUsers(userEmail);
+  if (!checkEmail) {
     return res.status(403).send("e-mail cannot be found");
   } else if (checkEmail && !userPassword) {
     //needs to also check if password is incorrect, only checking if there or not
-  return res.status(403).send("Password incorrect");
+    return res.status(403).send("Password incorrect");
   } else if (checkEmail && userPassword) {
-      for (let user in users) {
-        let email = users[user].email;
-        if (userEmail === email) {
-          if (users[user].password === userPassword) {
-            res.cookie("userID", users[user].id);
-          }
+    for (let user in users) {
+      let email = users[user].email;
+      if (userEmail === email) {
+        if (users[user].password === userPassword) {
+          res.cookie("userID", users[user].id);
         }
-
+      }
     }
-
   }
   res.redirect("/urls");
 });
