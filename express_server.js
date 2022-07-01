@@ -119,8 +119,35 @@ app.post("/urls/:shortURL", (req, res) => {
   res.redirect("/urls");
 });
 
+// const users = {
+//   g6gga4: {
+//     id: 'g6gga4',
+//     email: 'giddyup@email.com',
+//     password: 'password' }
+// }
 app.post("/login", (req, res) => {
-  res.cookie('email', req.body.email);
+// update to lookup the email addresses submitted via login form in the user object
+let userEmail = req.body.email;
+let userPassword = req.body.password;
+let userID;
+const checkEmail = searchUsers(userEmail)
+if (!checkEmail) {
+    return res.status(403).send("e-mail cannot be found");
+  } else if (checkEmail && !userPassword) {
+    //needs to also check if password is incorrect, only checking if there or not
+  return res.status(403).send("Password incorrect");
+  } else if (checkEmail && userPassword) {
+      for (let user in users) {
+        let email = users[user].email;
+        if (userEmail === email) {
+          if (users[user].password === userPassword) {
+            res.cookie("userID", users[user].id);
+          }
+        }
+
+    }
+
+  }
   res.redirect("/urls");
 });
 
@@ -151,7 +178,6 @@ app.post("/register", (req, res) => {
   users[userID] = {id: userID, email: userEmail, password: userPassword};
   //set cookie
   res.cookie("userID", userID);
-  res.cookie("password", userPassword);
   res.redirect("/urls");
   console.log(users);
 });
