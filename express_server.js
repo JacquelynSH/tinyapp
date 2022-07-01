@@ -24,6 +24,7 @@ function generateRandomString(site) {
 
 // variable assigned to an empty object to store user info
 const users = {
+
 };
 
 // helper function for looping through users
@@ -155,6 +156,13 @@ app.post("/register", (req, res) => {
   console.log(users);
 });
 
+app.get("/login", (req, res) => {
+  const urlVars = {
+    email: req.cookies['email'],
+    password: req.cookies['password']
+  };
+  res.render("user_login", urlVars);
+});
 
 
 
