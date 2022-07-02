@@ -22,12 +22,12 @@ function generateRandomString(site) {
   return result;
 }
 
-// variable assigned to an empty object to store user info
+//Users variable assigned to an empty object to store user info.
 const users = {
 
 };
 
-// helper function for looping through users
+//Helper function for looping through users via email.
 const searchUsers = function(emailofuser) {
   for (let user in users) {
     let email = users[user].email;
@@ -37,7 +37,7 @@ const searchUsers = function(emailofuser) {
   }
   return false;
 };
-
+//Helper function to access user by user ID.
 const getUserByID = function(id) {
   for (let user in users) {
     let userId = users[user].id;
@@ -48,15 +48,41 @@ const getUserByID = function(id) {
   return false;
 };
 
+//Helper function to compare given email and password.
+const checkPasswordByEmail = function(email, password) {
+  for (let user in users) {
+    let userEmail = users[user].email;
+    if (userEmail === email) {
+      let userPassword = users[user].password;
+      if (password === userPassword) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+//Helper function to access user Id by given email.
+const getIdFromEmail = function(email) {
+  for (let user in users) {
+    let userEmail = users[user].email;
+    if (userEmail === email) {
+      return users[user].id;
+    }
+  }
+  return false;
+};
+
+// Variable to store short and long URL's
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
 
 // '/' registers a handler on the root path
-app.get('/', (req, res) => {
-  res.send("Hello!");
-});
+// app.get('/', (req, res) => {
+//   res.send("Hello!");
+// });
 
 // PORT listener
 app.listen(PORT, () => {
@@ -66,12 +92,13 @@ app.listen(PORT, () => {
 app.get('/urls.json', (req, res) => {
   res.json(urlDatabase);
 });
-//html added to webpage
-app.get('/hello', (req, res) => {
-  res.send('<html><body>Hello <b>World</b></body></html>\n');
-});
 
-// added route handler to pass the URL data to template
+//html added to webpage
+// app.get('/hello', (req, res) => {
+//   res.send('<html><body>Hello <b>World</b></body></html>\n');
+// });
+
+//Route handler to pass the URL data to the template.
 app.get("/urls", (req, res) => {
   const getUser = getUserByID(req.cookies.userID);
   const urlVars =
@@ -89,22 +116,21 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", urlVars);
 });
 
-//accessing urlDatabase variable
+//Accessing urlDatabase variable.
 app.get("/urls/:shortURL", (req, res) => {
   const longShortURLs = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], email: req.cookies['email']};
   res.render("urls_show", longShortURLs);
 });
 
-//defines the route that will match the POST request and handle it. logs the request body and gives a dummy response.
+//Defines the route that will match the POST request and handle it. logs the request body and gives a dummy response.
 app.post("/urls", (req, res) => {
-  // call generateRandomString function and save the value to a variable
+  //call generateRandomString and save the value to a variable
   const shortURLs = generateRandomString(req.body.longURL);
   const longURL = req.body.longURL;
   urlDatabase[shortURLs] = longURL;
   res.redirect(`/urls/${shortURLs}`);
 });
 
-// Complete the code so that requests to the endpoint "/u/:shortURL" will redirect to its longURL
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL];
@@ -130,31 +156,32 @@ app.post("/urls/:shortURL", (req, res) => {
 app.post("/login", (req, res) => {
   let userEmail = req.body.email;
   let userPassword = req.body.password;
-  // let userID;
+  let userID = getIdFromEmail(userEmail);
+  let checkPassword = checkPasswordByEmail(userEmail, userPassword);
   const checkEmail = searchUsers(userEmail);
-  if (!checkEmail) {
+  // condition checking if no password or email entered.
+  if (!checkEmail && !userPassword) {
+    return res.status(400).send("Enter email and password");
+  // checking if email exists in users object.
+  } else if (!checkEmail) {
     return res.status(403).send("e-mail cannot be found");
-  } else if (checkEmail && !userPassword) {
-    //needs to also check if password is incorrect, only checking if there or not
+  // checking if given password matches given email.
+  }  else if (checkEmail && !checkPassword) {
     return res.status(403).send("Password incorrect");
-  } else if (checkEmail && userPassword) {
-    for (let user in users) {
-      let email = users[user].email;
-      if (userEmail === email) {
-        if (users[user].password === userPassword) {
-          res.cookie("userID", users[user].id);
-        }
-      }
-    }
+  // stores cookies if email and password are correct/exist.
+  } else if (checkEmail && checkPassword) {
+    res.cookie("userID", userID);
   }
   res.redirect("/urls");
 });
 
+// Clears cookies when user has logged out.
 app.post("/logout", (req, res) => {
   res.clearCookie('userID');
   res.redirect("/urls");
 });
 
+//
 app.get("/register", (req, res) => {
   const urlVars = {
     email: req.cookies['email']
@@ -162,18 +189,19 @@ app.get("/register", (req, res) => {
   res.render("urls_register", urlVars);
 });
 
+// Registering a new user.
 app.post("/register", (req, res) => {
-
   let userID = generateRandomString(req.body.email);
   let userEmail = req.body.email;
   let userPassword = req.body.password;
-  // add new user to user object
-
+  // Checks if email is already in use.
   if (searchUsers(userEmail)) {
     return res.status(400).send("email already in use");
+    // check if fields are not blank.
   } else if (!userEmail || !userPassword) {
     return res.status(400).send("Enter email and password");
   }
+  // Add new user to the users object.
   users[userID] = {id: userID, email: userEmail, password: userPassword};
   //set cookie
   res.cookie("userID", userID);
