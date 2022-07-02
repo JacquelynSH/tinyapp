@@ -73,6 +73,16 @@ const getIdFromEmail = function(email) {
   return false;
 };
 
+const isUserLoggedIn = function(req) {
+  const userId = req.cookies['userID'];
+  const user = users[userId];
+  if (user) {
+    return true;
+  }
+  return false;
+};
+
+
 // Variable to store short and long URL's
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -109,6 +119,9 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
+  if (!isUserLoggedIn(req)) {
+    return res.redirect('/login');
+  }
   const urlVars =
   { urls: urlDatabase,
     email: req.cookies['email']
@@ -122,13 +135,19 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", longShortURLs);
 });
 
+
+
 //Defines the route that will match the POST request and handle it. logs the request body and gives a dummy response.
 app.post("/urls", (req, res) => {
   //call generateRandomString and save the value to a variable
   const shortURLs = generateRandomString(req.body.longURL);
   const longURL = req.body.longURL;
   urlDatabase[shortURLs] = longURL;
-  res.redirect(`/urls/${shortURLs}`);
+  if (!isUserLoggedIn(req)) {
+    res.status(404).send("Please login");
+  } else {
+    res.redirect(`/urls/${shortURLs}`);
+  }
 });
 
 app.get("/u/:shortURL", (req, res) => {
