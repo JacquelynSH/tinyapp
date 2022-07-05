@@ -6,10 +6,20 @@ const PORT = 8080;
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const { Template } = require("ejs");
+const bcrypt = require('bcryptjs');
+
+/////////////////////////////////////////////////////////////////
+/////// Middleware
+/////////////////////////////////////////////////////////////////
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
+
 app.set("view engine", "ejs");
+
+/////////////////////////////////////////////////////////////////
+/////// Helper functions
+/////////////////////////////////////////////////////////////////
 
 // function to generate 6 random alphanumeric characters
 function generateRandomString(site) {
@@ -22,11 +32,8 @@ function generateRandomString(site) {
   return result;
 }
 
-//Users variable assigned to an empty object to store user info.
-const users = {};
-
 //Helper function for looping through users via email.
-const searchUsers = function (emailofuser) {
+const searchUsers = function(emailofuser) {
   for (let user in users) {
     let email = users[user].email;
     if (emailofuser === email) {
@@ -36,7 +43,7 @@ const searchUsers = function (emailofuser) {
   return false;
 };
 //Helper function to access user by user ID.
-const getUserByID = function (id) {
+const getUserByID = function(id) {
   for (let user in users) {
     let userId = users[user].id;
     if (userId === id) {
@@ -46,22 +53,8 @@ const getUserByID = function (id) {
   return false;
 };
 
-//Helper function to compare given email and password.
-const checkPasswordByEmail = function (email, password) {
-  for (let user in users) {
-    let userEmail = users[user].email;
-    if (userEmail === email) {
-      let userPassword = users[user].password;
-      if (password === userPassword) {
-        return true;
-      }
-    }
-  }
-  return false;
-};
-
 //Helper function to access user Id by given email.
-const getIdFromEmail = function (email) {
+const getIdFromEmail = function(email) {
   for (let user in users) {
     let userEmail = users[user].email;
     if (userEmail === email) {
@@ -71,7 +64,7 @@ const getIdFromEmail = function (email) {
   return false;
 };
 // checks to see if user is logged in
-const isUserLoggedIn = function (req) {
+const isUserLoggedIn = function(req) {
   const userId = req.cookies["userID"];
   const user = users[userId];
   if (user) {
@@ -81,10 +74,6 @@ const isUserLoggedIn = function (req) {
 };
 
 const urlsForUser = function(id) {
-  /* take the id of the logged in user. loop through the urldatabase. compare the given id from the logged in user to the id urldatabase to find the matching id.
-  return the corresponding short url and long url   */
-  /* { '6079cc': { longURL: 'www.website.com'}, '6079cc': { longURL: 'www.pizza.com' } }
-   */
   const userUrls = {};
   /* {'6079cc': { longURL: 'www.website.com'} } */
   for (let shortUrl in urlDatabase) {
@@ -97,32 +86,51 @@ const urlsForUser = function(id) {
   return userUrls;
 };
 
-// Create a function named urlsForUser(id) which returns the URLs where the userID is equal to the id of the currently logged-in user.
+// Helper function to compare given email and password.
+const checkPasswordByEmail = function(email, password) {
+  console.log("usersdatabase", users);
+  for (let user in users) {
+    let userEmail = users[user].email;
+    console.log("email", email);
 
+    if (userEmail === email) {
+      console.log("email2", userEmail);
+
+      return bcrypt.compareSync(password, users[user].password);
+    }
+  }
+  return false;
+};
+
+/////////////////////////////////////////////////////////////////
+/////// Database
+/////////////////////////////////////////////////////////////////
+
+const users = {
+
+};
 // Variable to store short and long URL's
 const urlDatabase = {
   // "b2xVn2": "http://www.lighthouselabs.ca",
   // "9sm5xK": "http://www.google.com"
 };
 
-// '/' registers a handler on the root path
-// app.get('/', (req, res) => {
-//   res.send("Hello!");
-// });
 
-// PORT listener
+/////////////////////////////////////////////////////////////////
+/////// Listener
+/////////////////////////////////////////////////////////////////
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
+/////////////////////////////////////////////////////////////////
+/////// Routes
+/////////////////////////////////////////////////////////////////
+
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
-
-//html added to webpage
-// app.get('/hello', (req, res) => {
-//   res.send('<html><body>Hello <b>World</b></body></html>\n');
-// });
 
 //Route handler to pass the URL data to the template.
 app.get("/urls", (req, res) => {
@@ -151,29 +159,31 @@ app.get("/urls/:id", (req, res) => {
       shortURL: req.params.id,
       longURL: urlDatabase[req.params.id].longURL,
       email: req.cookies["email"]
-    }
+    };
 
   }
   res.render("urls_show", longShortURLs);
 });
 
-//Defines the route that will match the POST request and handle it. logs the request body and gives a dummy response.
+
 app.post("/urls", (req, res) => {
   //call generateRandomString and save the value to a variable
   const shortURLs = generateRandomString(req.body.longURL);
   const longURL = req.body.longURL;
   const userID = req.cookies["userID"];
   urlDatabase[shortURLs] = { longURL: longURL, userID: userID };
-  console.log("LONGURL:", longURL);
-  console.log("URLDATA:", urlDatabase);
+  // console.log("LONGURL:", longURL);
+  // console.log("URLDATA:", urlDatabase);
   if (!isUserLoggedIn(req)) {
     res.status(404).send("Please login");
   } else {
     res.redirect(`/urls/${shortURLs}`);
   }
 });
-// EDIT?
+
+// EDIT? - still need to figure out how to not allow user to edit if id does not match
 app.get("/u/:shortURL", (req, res) => {
+  // const userUrls = urlsForUser(req.cookies["userID"]);
   const shortURL = req.params.shortURL;
   const urlObject = urlDatabase[shortURL];
   if (!urlObject) {
@@ -181,13 +191,14 @@ app.get("/u/:shortURL", (req, res) => {
   }
   res.redirect(urlObject.longURL);
 });
+
 // DELETE
 app.post("/urls/:shortURL/delete", (req, res) => {
   const userUrls = urlsForUser(req.cookies["userID"]);
   if (req.params.id in userUrls) {
-  delete urlDatabase[req.params.shortURL];
+    delete urlDatabase[req.params.shortURL];
   } else {
-    return res.status(403).send("Requested URL does not belong to user")
+    return res.status(403).send("Requested URL does not belong to user");
   }
   res.redirect("/urls");
 });
@@ -199,12 +210,22 @@ app.post("/urls/:shortURL", (req, res) => {
   res.redirect("/urls");
 });
 
+app.get("/login", (req, res) => {
+  const urlVars = {
+    email: req.cookies["email"],
+    password: req.cookies["password"],
+  };
+  res.render("user_login", urlVars);
+});
+
+
 app.post("/login", (req, res) => {
   let userEmail = req.body.email;
   let userPassword = req.body.password;
-  let userID = getIdFromEmail(userEmail);
-  let checkPassword = checkPasswordByEmail(userEmail, userPassword);
   const checkEmail = searchUsers(userEmail);
+  let checkPassword = checkPasswordByEmail(userEmail, userPassword);
+  let userID = getIdFromEmail(userEmail);
+
   // condition checking if no password or email entered.
   if (!checkEmail && !userPassword) {
     return res.status(400).send("Enter email and password");
@@ -218,6 +239,7 @@ app.post("/login", (req, res) => {
   } else if (checkEmail && checkPassword) {
     res.cookie("userID", userID);
   }
+
   res.redirect("/urls");
 });
 
@@ -227,7 +249,6 @@ app.post("/logout", (req, res) => {
   res.redirect("/urls");
 });
 
-//
 app.get("/register", (req, res) => {
   const urlVars = {
     email: req.cookies["email"],
@@ -235,11 +256,15 @@ app.get("/register", (req, res) => {
   res.render("urls_register", urlVars);
 });
 
+
+
 // Registering a new user.
 app.post("/register", (req, res) => {
   let userID = generateRandomString(req.body.email);
   let userEmail = req.body.email;
   let userPassword = req.body.password;
+  //hash password
+  const hashedPassword = bcrypt.hashSync(userPassword, 10);
   // Checks if email is already in use.
   if (searchUsers(userEmail)) {
     return res.status(400).send("email already in use");
@@ -248,17 +273,10 @@ app.post("/register", (req, res) => {
     return res.status(400).send("Enter email and password");
   }
   // Add new user to the users object.
-  users[userID] = { id: userID, email: userEmail, password: userPassword };
+  users[userID] = { id: userID, email: userEmail, password: hashedPassword };
   //set cookie
   res.cookie("userID", userID);
   res.redirect("/urls");
   console.log("USERS", users);
 });
 
-app.get("/login", (req, res) => {
-  const urlVars = {
-    email: req.cookies["email"],
-    password: req.cookies["password"],
-  };
-  res.render("user_login", urlVars);
-});
