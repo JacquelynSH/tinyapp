@@ -63,7 +63,7 @@ const getIdFromEmail = function(email) {
   }
   return false;
 };
-// checks to see if user is logged in
+//Check to see if user is logged in
 const isUserLoggedIn = function(req) {
   const userId = req.cookies["userID"];
   const user = users[userId];
@@ -75,11 +75,9 @@ const isUserLoggedIn = function(req) {
 
 const urlsForUser = function(id) {
   const userUrls = {};
-  /* {'6079cc': { longURL: 'www.website.com'} } */
   for (let shortUrl in urlDatabase) {
     let userId = urlDatabase[shortUrl].userID;
     if (userId === id) {
-      // console.log("***", users[user].longURL);
       userUrls[shortUrl] = urlDatabase[shortUrl];
     }
   }
@@ -88,14 +86,9 @@ const urlsForUser = function(id) {
 
 // Helper function to compare given email and password.
 const checkPasswordByEmail = function(email, password) {
-  console.log("usersdatabase", users);
   for (let user in users) {
     let userEmail = users[user].email;
-    console.log("email", email);
-
-    if (userEmail === email) {
-      console.log("email2", userEmail);
-
+        if (userEmail === email) {
       return bcrypt.compareSync(password, users[user].password);
     }
   }
