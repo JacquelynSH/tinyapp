@@ -9,4 +9,4 @@ const getIdFromEmail = function(email, users) {
   return false;
 };
 
-module.exports = { getIdFromEmail };
+module.exports = getIdFromEmail;

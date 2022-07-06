@@ -7,7 +7,7 @@ const bodyParser = require("body-parser");
 const { Template } = require("ejs");
 const bcrypt = require('bcryptjs');
 const cookieSession = require("cookie-session");
-const { getIdFromEmail } = require('../helpers.js');
+const getIdFromEmail = require('./helpers.js');
 
 /////////////////////////////////////////////////////////////////
 /////// Middleware
