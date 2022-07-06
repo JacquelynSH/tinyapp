@@ -4,16 +4,24 @@ const res = require("express/lib/response");
 const app = express();
 const PORT = 8080;
 const bodyParser = require("body-parser");
-const cookieParser = require("cookie-parser");
 const { Template } = require("ejs");
 const bcrypt = require('bcryptjs');
+const cookieSession = require("cookie-session");
+const { getIdFromEmail } = require('../helpers.js');
 
 /////////////////////////////////////////////////////////////////
 /////// Middleware
 /////////////////////////////////////////////////////////////////
 
+const MS_IN_A_DAY = 24 * 60 * 60 * 1000;
+
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cookieParser());
+// app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: ['secret-keys'],
+  maxAge: MS_IN_A_DAY
+}));
 
 app.set("view engine", "ejs");
 
@@ -53,19 +61,9 @@ const getUserByID = function(id) {
   return false;
 };
 
-//Helper function to access user Id by given email.
-const getIdFromEmail = function(email) {
-  for (let user in users) {
-    let userEmail = users[user].email;
-    if (userEmail === email) {
-      return users[user].id;
-    }
-  }
-  return false;
-};
 //Check to see if user is logged in
 const isUserLoggedIn = function(req) {
-  const userId = req.cookies["userID"];
+  const userId = req.session["userID"];
   const user = users[userId];
   if (user) {
     return true;
@@ -88,7 +86,7 @@ const urlsForUser = function(id) {
 const checkPasswordByEmail = function(email, password) {
   for (let user in users) {
     let userEmail = users[user].email;
-        if (userEmail === email) {
+    if (userEmail === email) {
       return bcrypt.compareSync(password, users[user].password);
     }
   }
@@ -102,6 +100,7 @@ const checkPasswordByEmail = function(email, password) {
 const users = {
 
 };
+
 // Variable to store short and long URL's
 const urlDatabase = {
   // "b2xVn2": "http://www.lighthouselabs.ca",
@@ -127,7 +126,7 @@ app.get("/urls.json", (req, res) => {
 
 //Route handler to pass the URL data to the template.
 app.get("/urls", (req, res) => {
-  const getUser = getUserByID(req.cookies.userID);
+  const getUser = getUserByID(req.session.userID);
   const urlVars = { urls: urlDatabase, email: getUser.email };
   res.render("urls_index", urlVars);
 });
@@ -137,21 +136,21 @@ app.get("/urls/new", (req, res) => {
   if (!isUserLoggedIn(req)) {
     return res.redirect("/login");
   }
-  const urlVars = { urls: urlDatabase, email: req.cookies["email"] };
+  const urlVars = { urls: urlDatabase, email: req.session["email"] };
   res.render("urls_new", urlVars);
 });
 
 app.get("/urls/:id", (req, res) => {
   console.log("params:", req.params.id);
   console.log("URLDatabase;", urlDatabase);
-  const userUrls = urlsForUser(req.cookies["userID"]);
+  const userUrls = urlsForUser(req.session["userID"]);
   let longShortURLs;
   if (req.params.id in userUrls) {
     console.log("URLS", userUrls);
     longShortURLs = {
       shortURL: req.params.id,
       longURL: urlDatabase[req.params.id].longURL,
-      email: req.cookies["email"]
+      email: req.session["email"]
     };
 
   }
@@ -163,7 +162,7 @@ app.post("/urls", (req, res) => {
   //call generateRandomString and save the value to a variable
   const shortURLs = generateRandomString(req.body.longURL);
   const longURL = req.body.longURL;
-  const userID = req.cookies["userID"];
+  const userID = req.session["userID"];
   urlDatabase[shortURLs] = { longURL: longURL, userID: userID };
   // console.log("LONGURL:", longURL);
   // console.log("URLDATA:", urlDatabase);
@@ -187,7 +186,7 @@ app.get("/u/:shortURL", (req, res) => {
 
 // DELETE
 app.post("/urls/:shortURL/delete", (req, res) => {
-  const userUrls = urlsForUser(req.cookies["userID"]);
+  const userUrls = urlsForUser(req.session["userID"]);
   if (req.params.id in userUrls) {
     delete urlDatabase[req.params.shortURL];
   } else {
@@ -205,8 +204,8 @@ app.post("/urls/:shortURL", (req, res) => {
 
 app.get("/login", (req, res) => {
   const urlVars = {
-    email: req.cookies["email"],
-    password: req.cookies["password"],
+    email: req.session["email"],
+    password: req.session["password"],
   };
   res.render("user_login", urlVars);
 });
@@ -216,9 +215,9 @@ app.post("/login", (req, res) => {
   let userEmail = req.body.email;
   let userPassword = req.body.password;
   const checkEmail = searchUsers(userEmail);
+  const userDatabase = users;
   let checkPassword = checkPasswordByEmail(userEmail, userPassword);
-  let userID = getIdFromEmail(userEmail);
-
+  let userID = getIdFromEmail(userEmail, userDatabase);
   // condition checking if no password or email entered.
   if (!checkEmail && !userPassword) {
     return res.status(400).send("Enter email and password");
@@ -230,21 +229,21 @@ app.post("/login", (req, res) => {
     return res.status(403).send("Password incorrect");
     // stores cookies if email and password are correct/exist.
   } else if (checkEmail && checkPassword) {
-    res.cookie("userID", userID);
+    // res.cookie("userID", userID);
+    req.session.userID = userID;
   }
-
   res.redirect("/urls");
 });
 
 // Clears cookies when user has logged out.
 app.post("/logout", (req, res) => {
-  res.clearCookie("userID");
+  req.session = null;
   res.redirect("/urls");
 });
 
 app.get("/register", (req, res) => {
   const urlVars = {
-    email: req.cookies["email"],
+    email: req.session["email"],
   };
   res.render("urls_register", urlVars);
 });
@@ -268,8 +267,8 @@ app.post("/register", (req, res) => {
   // Add new user to the users object.
   users[userID] = { id: userID, email: userEmail, password: hashedPassword };
   //set cookie
-  res.cookie("userID", userID);
+  req.session.userID = userID;
   res.redirect("/urls");
-  console.log("USERS", users);
+
 });
 
