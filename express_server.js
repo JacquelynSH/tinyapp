@@ -136,7 +136,8 @@ app.get("/urls/new", (req, res) => {
   if (!isUserLoggedIn(req)) {
     return res.redirect("/login");
   }
-  const urlVars = { urls: urlDatabase, email: req.session["email"] };
+  const getUser = getUserByID(req.session.userID);
+  const urlVars = { urls: urlDatabase, email: getUser.email };
   res.render("urls_new", urlVars);
 });
 
@@ -150,7 +151,7 @@ app.get("/urls/:id", (req, res) => {
     longShortURLs = {
       shortURL: req.params.id,
       longURL: urlDatabase[req.params.id].longURL,
-      email: req.session["email"]
+      email: getUserByID(req.session.userID).email
     };
 
   }
@@ -173,9 +174,7 @@ app.post("/urls", (req, res) => {
   }
 });
 
-// EDIT? - still need to figure out how to not allow user to edit if id does not match
 app.get("/u/:shortURL", (req, res) => {
-  // const userUrls = urlsForUser(req.cookies["userID"]);
   const shortURL = req.params.shortURL;
   const urlObject = urlDatabase[shortURL];
   if (!urlObject) {
@@ -186,13 +185,14 @@ app.get("/u/:shortURL", (req, res) => {
 
 // DELETE
 app.post("/urls/:shortURL/delete", (req, res) => {
-  const userUrls = urlsForUser(req.session["userID"]);
-  if (req.params.id in userUrls) {
+  const shortURL = urlDatabase[req.params.shortURL];
+  if (shortURL.userID === req.session["userID"]){
     delete urlDatabase[req.params.shortURL];
-  } else {
-    return res.status(403).send("Requested URL does not belong to user");
-  }
-  res.redirect("/urls");
+  }  else {
+      return res.status(403).send("Requested URL does not belong to user");
+    }
+    res.redirect("/urls")
+
 });
 
 app.post("/urls/:shortURL", (req, res) => {
