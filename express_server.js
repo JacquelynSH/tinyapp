@@ -186,12 +186,12 @@ app.get("/u/:shortURL", (req, res) => {
 // DELETE
 app.post("/urls/:shortURL/delete", (req, res) => {
   const shortURL = urlDatabase[req.params.shortURL];
-  if (shortURL.userID === req.session["userID"]){
+  if (shortURL.userID === req.session["userID"]) {
     delete urlDatabase[req.params.shortURL];
-  }  else {
-      return res.status(403).send("Requested URL does not belong to user");
-    }
-    res.redirect("/urls")
+  } else {
+    return res.status(403).send("Requested URL does not belong to user");
+  }
+  res.redirect("/urls");
 
 });
 
