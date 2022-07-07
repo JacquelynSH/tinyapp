@@ -16,7 +16,6 @@ const getIdFromEmail = require('./helpers.js');
 const MS_IN_A_DAY = 24 * 60 * 60 * 1000;
 
 app.use(bodyParser.urlencoded({ extended: true }));
-// app.use(cookieParser());
 app.use(cookieSession({
   name: 'session',
   keys: ['secret-keys'],
@@ -103,10 +102,8 @@ const users = {
 
 // Variable to store short and long URL's
 const urlDatabase = {
-  // "b2xVn2": "http://www.lighthouselabs.ca",
-  // "9sm5xK": "http://www.google.com"
-};
 
+};
 
 /////////////////////////////////////////////////////////////////
 /////// Listener
@@ -153,7 +150,6 @@ app.get("/urls/:id", (req, res) => {
       longURL: urlDatabase[req.params.id].longURL,
       email: getUserByID(req.session.userID).email
     };
-
   }
   res.render("urls_show", longShortURLs);
 });
@@ -165,8 +161,6 @@ app.post("/urls", (req, res) => {
   const longURL = req.body.longURL;
   const userID = req.session["userID"];
   urlDatabase[shortURLs] = { longURL: longURL, userID: userID };
-  // console.log("LONGURL:", longURL);
-  // console.log("URLDATA:", urlDatabase);
   if (!isUserLoggedIn(req)) {
     res.status(404).send("Please login");
   } else {
@@ -183,7 +177,7 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(urlObject.longURL);
 });
 
-// DELETE
+// DELETE route
 app.post("/urls/:shortURL/delete", (req, res) => {
   const shortURL = urlDatabase[req.params.shortURL];
   if (shortURL.userID === req.session["userID"]) {
@@ -247,7 +241,6 @@ app.get("/register", (req, res) => {
   };
   res.render("urls_register", urlVars);
 });
-
 
 
 // Registering a new user.
