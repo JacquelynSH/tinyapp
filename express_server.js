@@ -1,10 +1,7 @@
 const express = require("express");
-const req = require("express/lib/request");
-const res = require("express/lib/response");
 const app = express();
 const PORT = 8080;
 const bodyParser = require("body-parser");
-const { Template } = require("ejs");
 const bcrypt = require('bcryptjs');
 const cookieSession = require("cookie-session");
 const getIdFromEmail = require('./helpers.js');
@@ -32,18 +29,16 @@ app.set("view engine", "ejs");
 function generateRandomString(site) {
   let result = "";
   const characters = "0123456789abcdefghijklmnopqrstuvwxyz";
-  let newSite = site.length;
   for (let i = 0; i < 6; i++) {
-    result += characters.charAt(Math.floor(Math.random() * newSite));
+    result += characters.charAt(Math.floor(Math.random() * site.length));
   }
   return result;
 }
 
 //Helper function for looping through users via email.
-const searchUsers = function(emailofuser) {
+const searchUsers = function(userEmail) {
   for (let user in users) {
-    let email = users[user].email;
-    if (emailofuser === email) {
+    if (userEmail === users[user].email) {
       return true;
     }
   }
@@ -52,8 +47,7 @@ const searchUsers = function(emailofuser) {
 //Helper function to access user by user ID.
 const getUserByID = function(id) {
   for (let user in users) {
-    let userId = users[user].id;
-    if (userId === id) {
+    if (users[user].id === id) {
       return users[user];
     }
   }
@@ -96,40 +90,24 @@ const checkPasswordByEmail = function(email, password) {
 /////// Database
 /////////////////////////////////////////////////////////////////
 
-const users = {
-
-};
+const users = {};
 
 // Variable to store short and long URL's
-const urlDatabase = {
-
-};
-
-/////////////////////////////////////////////////////////////////
-/////// Listener
-/////////////////////////////////////////////////////////////////
-
-app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
-});
+const urlDatabase = {};
 
 /////////////////////////////////////////////////////////////////
 /////// Routes
 /////////////////////////////////////////////////////////////////
 
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
 
 //Route handler to pass the URL data to the template.
 app.get("/urls", (req, res) => {
   const getUser = getUserByID(req.session.userID);
-  const urlVars = { urls: urlDatabase, email: getUser.email };
+  const urlVars = { urls: urlsForUser(req.session.userID), email: getUser.email };
   res.render("urls_index", urlVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  // check if user is logged in
   if (!isUserLoggedIn(req)) {
     return res.redirect("/login");
   }
@@ -138,24 +116,56 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", urlVars);
 });
 
+
 app.get("/urls/:id", (req, res) => {
-  console.log("params:", req.params.id);
-  console.log("URLDatabase;", urlDatabase);
   const userUrls = urlsForUser(req.session["userID"]);
   let longShortURLs;
+  console.log("REQ", req.params.id)
   if (req.params.id in userUrls) {
-    console.log("URLS", userUrls);
     longShortURLs = {
       shortURL: req.params.id,
       longURL: urlDatabase[req.params.id].longURL,
       email: getUserByID(req.session.userID).email
     };
+    res.render("urls_show", longShortURLs);
   }
-  res.render("urls_show", longShortURLs);
+  res.status(404).send("Please login");
+}); // ERROR THROWING here
+
+app.get("/u/:shortURL", (req, res) => {
+  const shortURL = req.params.shortURL;
+  const urlObject = urlDatabase[shortURL];
+  if (!urlObject) {
+    res.status(404).send("Page not Found");
+  }
+  res.redirect(urlObject.longURL);
 });
 
+app.get("/login", (req, res) => {
+  const urlVars = {
+    email: req.session["email"],
+    password: req.session["password"],
+  };
+  res.render("user_login", urlVars);
+});
+
+// Clears cookies when user has logged out.
+app.post("/logout", (req, res) => {
+  req.session = null;
+  res.redirect("/urls");
+});
+
+app.get("/register", (req, res) => {
+  const urlVars = {
+    email: req.session["email"],
+  };
+  res.render("urls_register", urlVars);
+});
 
 app.post("/urls", (req, res) => {
+  if (!isUserLoggedIn(req)) {
+    return res.redirect("/login");
+  }
   //call generateRandomString and save the value to a variable
   const shortURLs = generateRandomString(req.body.longURL);
   const longURL = req.body.longURL;
@@ -166,15 +176,6 @@ app.post("/urls", (req, res) => {
   } else {
     res.redirect(`/urls/${shortURLs}`);
   }
-});
-
-app.get("/u/:shortURL", (req, res) => {
-  const shortURL = req.params.shortURL;
-  const urlObject = urlDatabase[shortURL];
-  if (!urlObject) {
-    res.status(404).send("Page not Found");
-  }
-  res.redirect(urlObject.longURL);
 });
 
 // DELETE route
@@ -190,20 +191,16 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 app.post("/urls/:shortURL", (req, res) => {
+  if (!isUserLoggedIn(req)) {
+    return res.redirect("/login");
+  } if (urlDatabase[req.params.shortURL].userID !== req.session.userID) {
+    return res.redirect("/login");
+  }
   const shortURL = req.params.shortURL;
   const longURL = req.body.longURL;
   urlDatabase[shortURL].longURL = longURL;
   res.redirect("/urls");
 });
-
-app.get("/login", (req, res) => {
-  const urlVars = {
-    email: req.session["email"],
-    password: req.session["password"],
-  };
-  res.render("user_login", urlVars);
-});
-
 
 app.post("/login", (req, res) => {
   let userEmail = req.body.email;
@@ -229,20 +226,6 @@ app.post("/login", (req, res) => {
   res.redirect("/urls");
 });
 
-// Clears cookies when user has logged out.
-app.post("/logout", (req, res) => {
-  req.session = null;
-  res.redirect("/urls");
-});
-
-app.get("/register", (req, res) => {
-  const urlVars = {
-    email: req.session["email"],
-  };
-  res.render("urls_register", urlVars);
-});
-
-
 // Registering a new user.
 app.post("/register", (req, res) => {
   let userID = generateRandomString(req.body.email);
@@ -262,6 +245,13 @@ app.post("/register", (req, res) => {
   //set cookie
   req.session.userID = userID;
   res.redirect("/urls");
-
+  console.log(users)
 });
 
+/////////////////////////////////////////////////////////////////
+/////// Listener
+/////////////////////////////////////////////////////////////////
+
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}!`);
+});
