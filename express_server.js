@@ -29,7 +29,7 @@ app.set("view engine", "ejs");
 function generateRandomString(site) {
   let result = "";
   const characters = "0123456789abcdefghijklmnopqrstuvwxyz";
-  for (const i = 0; i < 6; i++) {
+  for (let i = 0; i < 6; i++) {
     result += characters.charAt(Math.floor(Math.random() * site.length));
   }
   return result;
@@ -100,10 +100,15 @@ const urlDatabase = {};
 
 
 //Route handler to pass the URL data to the template.
-app.get("/urls", (req, res) => {
+app.get("/", (req, res) => {
   if (!isUserLoggedIn(req)) {
     return res.redirect("/login");
+  } else {
+    res.redirect("/urls");
   }
+});
+
+app.get("/urls", (req, res) => {
   const getUser = getUserByID(req.session.userID);
   const urlVars = { urls: urlsForUser(req.session.userID), email: getUser.email };
   res.render("urls_index", urlVars);
@@ -122,7 +127,6 @@ app.get("/urls/new", (req, res) => {
 app.get("/urls/:id", (req, res) => {
   const userUrls = urlsForUser(req.session["userID"]);
   let longShortURLs;
-  console.log("REQ", req.params.id)
   if (req.params.id in userUrls) {
     longShortURLs = {
       shortURL: req.params.id,
@@ -152,17 +156,17 @@ app.get("/login", (req, res) => {
   res.render("user_login", urlVars);
 });
 
-// Clears cookies when user has logged out.
-app.post("/logout", (req, res) => {
-  req.session = null;
-  res.redirect("/urls");
-});
-
 app.get("/register", (req, res) => {
   const urlVars = {
     email: req.session["email"],
   };
   res.render("urls_register", urlVars);
+});
+
+// Clears cookies when user has logged out.
+app.post("/logout", (req, res) => {
+  req.session = null;
+  res.redirect("/urls");
 });
 
 app.post("/urls", (req, res) => {
