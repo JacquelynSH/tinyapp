@@ -29,7 +29,7 @@ app.set("view engine", "ejs");
 function generateRandomString(site) {
   let result = "";
   const characters = "0123456789abcdefghijklmnopqrstuvwxyz";
-  for (let i = 0; i < 6; i++) {
+  for (const i = 0; i < 6; i++) {
     result += characters.charAt(Math.floor(Math.random() * site.length));
   }
   return result;
@@ -37,7 +37,7 @@ function generateRandomString(site) {
 
 //Helper function for looping through users via email.
 const searchUsers = function(userEmail) {
-  for (let user in users) {
+  for (const user in users) {
     if (userEmail === users[user].email) {
       return true;
     }
@@ -46,7 +46,7 @@ const searchUsers = function(userEmail) {
 };
 //Helper function to access user by user ID.
 const getUserByID = function(id) {
-  for (let user in users) {
+  for (const user in users) {
     if (users[user].id === id) {
       return users[user];
     }
@@ -57,8 +57,7 @@ const getUserByID = function(id) {
 //Check to see if user is logged in
 const isUserLoggedIn = function(req) {
   const userId = req.session["userID"];
-  const user = users[userId];
-  if (user) {
+  if (users[userId]) {
     return true;
   }
   return false;
@@ -66,7 +65,7 @@ const isUserLoggedIn = function(req) {
 
 const urlsForUser = function(id) {
   const userUrls = {};
-  for (let shortUrl in urlDatabase) {
+  for (const shortUrl in urlDatabase) {
     let userId = urlDatabase[shortUrl].userID;
     if (userId === id) {
       userUrls[shortUrl] = urlDatabase[shortUrl];
@@ -77,7 +76,7 @@ const urlsForUser = function(id) {
 
 // Helper function to compare given email and password.
 const checkPasswordByEmail = function(email, password) {
-  for (let user in users) {
+  for (const user in users) {
     let userEmail = users[user].email;
     if (userEmail === email) {
       return bcrypt.compareSync(password, users[user].password);
@@ -102,6 +101,9 @@ const urlDatabase = {};
 
 //Route handler to pass the URL data to the template.
 app.get("/urls", (req, res) => {
+  if (!isUserLoggedIn(req)) {
+    return res.redirect("/login");
+  }
   const getUser = getUserByID(req.session.userID);
   const urlVars = { urls: urlsForUser(req.session.userID), email: getUser.email };
   res.render("urls_index", urlVars);
@@ -126,11 +128,12 @@ app.get("/urls/:id", (req, res) => {
       shortURL: req.params.id,
       longURL: urlDatabase[req.params.id].longURL,
       email: getUserByID(req.session.userID).email
-    };
+    }
     res.render("urls_show", longShortURLs);
-  }
+  } else {
   res.status(404).send("Please login");
-}); // ERROR THROWING here
+  }
+});
 
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
