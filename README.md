@@ -22,9 +22,13 @@ Enter a long URL here to shorten.
 ## Getting Started
 
 - Install all dependencies (using the `npm install` command).
+<<<<<<< HEAD
 - Run the development web server using the `npm start` command.
 
 ## Author
 
 This version of tinyapp was made by Jacquelyn Haug!
 Github @JacquelynSH
+=======
+- Run the development web server using the `node express_server.js` command.
+>>>>>>> 662b5f3f54ccd7f93de471266ac2de35288a7f05
